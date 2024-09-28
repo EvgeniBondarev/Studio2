@@ -1,0 +1,199 @@
+﻿@using OzonOrdersWeb.ViewModels.OrderViewModels
+
+@model MatchedRowViewModel
+
+<div class="container-fluid">
+
+    <nav class="navbar navbar-expand-lg navbar-light sticky-top">
+        <div class="container">
+            <div class="input-group mb-3">
+                <button class="btn btn-secondary" onclick="previousMatch()">←</button>
+                <input type="text" id="searchInput" placeholder="Поиск..." class="form-control" onkeyup="searchInTables()" />
+                <span id="matchCount" class="input-group-text" style="display: none;">Найдено: 0</span>
+                <button class="btn btn-secondary" onclick="nextMatch()">→</button>
+            </div>
+        </div>
+    </nav>
+
+
+
+    <div class="row">
+        <!-- Таблица для отображения данных -->
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th style="width: 50%;">Записи основного файла / @Model.MainFileName</th>
+                    <th style="width: 50%;">Сопоставления / @Model.ScondaryFileName</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var matchedRow in Model.MatchedResults)
+                {
+                    <tr>
+                        <!-- Записи основного файла -->
+                        <td style="max-height: 300px; max-width: 300px; overflow-y: auto; overflow-x: auto; white-space: nowrap;">
+                            @if (matchedRow.File1Data.Any())
+                            {
+                                <table class="table table-sm" style="width: 100%;">
+                                    <thead>
+                                        <tr>
+                                            @foreach (var kvp in matchedRow.File1Data)
+                                            {
+                                                <th><strong>@kvp.Key</strong></th>
+                                            }
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            @foreach (var kvp in matchedRow.File1Data)
+                                            {
+                                                <td>@kvp.Value</td>
+                                            }
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            }
+                            else
+                            {
+                                <span>Нет записей</span>
+                            }
+                        </td>
+
+                        <!-- Сопоставления (второй файл) -->
+                        <td style="max-height: 300px; max-width: 300px; overflow-y: auto; overflow-x: auto; white-space: nowrap;">
+                            @if (matchedRow.File2Data.Any())
+                            {
+                                <table class="table table-sm" style="width: 100%;">
+                                    <thead>
+                                        <tr>
+                                            @foreach (var kvp in matchedRow.File2Data[0])
+                                            {
+                                                <th><strong>@kvp.Key</strong></th>
+                                            }
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var file2Row in matchedRow.File2Data)
+                                        {
+                                            <tr>
+                                                @foreach (var kvp in file2Row)
+                                                {
+                                                    <td>@kvp.Value</td>
+                                                }
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            }
+                            else
+                            {
+                                <span>Нет соответствий</span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Подключение стилей Bootstrap (если еще не подключено) -->
+<link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet" />
+
+<script>
+    let currentMatchIndex = -1; // Индекс текущего совпадения
+    let matches = []; // Массив для хранения совпадений
+
+    function searchInTables() {
+        const input = document.getElementById('searchInput');
+        const filter = input.value.toLowerCase();
+        const tables = document.querySelectorAll('.table-sm');
+        matches = []; // Сброс массива совпадений
+
+        // Проверка, если поле ввода пустое
+        if (filter === "") {
+            // Если поле пустое, сбрасываем все выделения
+            const cells = document.querySelectorAll('td');
+            cells.forEach(cell => {
+                cell.style.backgroundColor = ''; // Сброс выделения
+                cell.style.border = ''; // Сброс границ
+            });
+
+            // Сброс окраски строк
+            const rows = document.querySelectorAll('tbody tr');
+            rows.forEach(row => {
+                row.style.backgroundColor = ''; // Сброс цвета строки
+            });
+
+            // Сброс количества найденных записей
+            document.getElementById('matchCount').innerText = "Найдено: 0";
+            document.getElementById('matchCount').style.display = 'none'; // Скрытие счетчика
+
+            currentMatchIndex = -1; // Сброс индекса текущего совпадения
+            return; // Выход из функции
+        }
+
+        tables.forEach(table => {
+            const rows = table.querySelectorAll('tbody tr');
+
+            rows.forEach((row) => {
+                let rowContainsText = false; // Флаг для проверки наличия текста в строке
+                const cells = row.querySelectorAll('td');
+
+                cells.forEach(cell => {
+                    if (cell.textContent.toLowerCase().includes(filter)) {
+                        rowContainsText = true; // Если найдено совпадение
+                        matches.push({ cell, index: currentMatchIndex }); // Добавление совпадения в массив
+                        cell.style.backgroundColor = '#ffeb3b'; // Выделение совпадений желтым цветом
+                        row.style.backgroundColor = '#ff5722'; // Выделение всей строки цветом #ff5722
+                    } else {
+                        cell.style.backgroundColor = ''; // Сброс выделения
+                    }
+                });
+
+                // Сброс цвета строки, если нет совпадений
+                if (!rowContainsText) {
+                    row.style.backgroundColor = ''; // Сброс цвета строки
+                }
+            });
+        });
+
+        // Обновление количества найденных записей
+        document.getElementById('matchCount').innerText = `Найдено: ${matches.length}`;
+
+        // Показ счетчика, если есть совпадения
+        document.getElementById('matchCount').style.display = matches.length > 0 ? 'inline' : 'none';
+
+        // Сброс текущего индекса при новом поиске
+        currentMatchIndex = -1;
+    }
+
+    function highlightMatch(index) {
+        if (matches.length === 0) return;
+        // Сброс фона и границ для всех совпадений
+        matches.forEach(match => {
+            match.cell.style.backgroundColor = '#ffeb3b'; // Сохранение желтого фона
+            match.cell.style.border = ''; // Сброс границ
+        });
+
+        // Подсветка текущего совпадения
+        const currentMatch = matches[index];
+        if (currentMatch) {
+            currentMatch.cell.style.border = '3px solid black'; // Толстая черная рамка для текущего совпадения
+            currentMatch.cell.style.borderRadius = '5px'; // Скругление углов рамки
+            currentMatch.cell.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+    }
+
+    function previousMatch() {
+        if (matches.length === 0) return;
+        currentMatchIndex = (currentMatchIndex <= 0) ? matches.length - 1 : currentMatchIndex - 1;
+        highlightMatch(currentMatchIndex);
+    }
+
+    function nextMatch() {
+        if (matches.length === 0) return;
+        currentMatchIndex = (currentMatchIndex >= matches.length - 1) ? 0 : currentMatchIndex + 1;
+        highlightMatch(currentMatchIndex);
+    }
+</script>

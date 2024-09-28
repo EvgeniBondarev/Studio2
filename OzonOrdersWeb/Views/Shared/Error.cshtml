@@ -1,0 +1,26 @@
+﻿@model ErrorViewModel
+@{
+    ViewData["Title"] = "Error";
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>@ViewData["Title"]</title>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <div class="row">
+            <div class="col-md-6 offset-md-3">
+                <div class="alert alert-danger" role="alert">
+                    <h4 class="alert-heading">Ошибка</h4>
+                    <p>@ViewBag.ErrorMessage</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+
+
